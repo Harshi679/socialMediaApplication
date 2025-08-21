@@ -1,4 +1,4 @@
-export const protect = async(params){
+export const protect = async(params)=>{
     try{
         const {userId} = await req.auth();
         if(!userId){

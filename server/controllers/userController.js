@@ -3,7 +3,7 @@
 import imagekit from '../configs/imageKit.js';
 import User from '../models/User.js';
 import fs from 'fs';
-export const getUserData = async(req,res){
+export const getUserData = async(req,res)=>{
     try{
          const {userId} =req.auth();
          const user = await User.findById(userId)
@@ -21,7 +21,7 @@ export const getUserData = async(req,res){
 }
 
 //update user data
-export const updateUserData = async(req,res){
+export const updateUserData = async(req,res)=>{
     try{
          const {userId} =req.auth();
          const {username,bio,location,full_name} = req.body;
@@ -96,7 +96,7 @@ export const updateUserData = async(req,res){
 
 //find Users using username, email, location, name
 
-export const discoverUsers = async(req,res){
+export const discoverUsers = async(req,res)=>{
     try{
          const {userId} =req.auth();
          const {input} = req.body;
@@ -124,7 +124,7 @@ export const discoverUsers = async(req,res){
 
 //follow user
 
-export const followUser = async(req,res){
+export const followUser = async(req,res)=>{
     try{
          const {userId} =req.auth();
          const {id} = req.body;
@@ -151,7 +151,7 @@ export const followUser = async(req,res){
 
 //unfollow user
 
-export const unfollowUser = async(req,res){
+export const unfollowUser = async(req,res)=>{
     try{
          const {userId} =req.auth();
          const {id} = req.body;
