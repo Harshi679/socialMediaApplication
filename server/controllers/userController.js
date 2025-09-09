@@ -4,7 +4,7 @@ import Connection from '../models/Connection.js';
 import imagekit from '../configs/imageKit.js';
 import User from '../models/User.js';
 import fs from 'fs';
-
+import { inngest } from '../inngest/index.js';
 // =================== Get User Data ===================
 export const getUserData = async (req, res) => {
   try {
@@ -162,7 +162,7 @@ export const unfollowUser = async (req, res) => {
 };
 
 // =================== Send Connection Request ===================
-export const sendConnectionRequest = async (req, res) => {
+/*export const sendConnectionRequest = async (req, res) => {
   try {
     const { userId } = req.auth;
     const { id } = req.body;
@@ -206,7 +206,72 @@ export const sendConnectionRequest = async (req, res) => {
     console.log(error);
     res.json({ success: false, message: error.message });
   }
+};*/
+// controllers/userController.js
+// <--- Import your Inngest client here
+
+// ... (other controller functions)
+
+// =================== Send Connection Request ===================
+export const sendConnectionRequest = async (req, res) => {
+  try {
+    const { userId } = req.auth;
+    const { id } = req.body;
+
+    // Check request limit (20 in 24h)
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const connectionRequests = await Connection.find({
+      from_user_id: userId,
+      created_at: { $gt: last24Hours },
+    });
+
+    if (connectionRequests.length >= 20) {
+      return res.json({
+        success: false,
+        message: 'You have sent more than 20 connection requests in the last 24 hours',
+      });
+    }
+
+    // Check if already connected
+    const connection = await Connection.findOne({
+      $or: [
+        { from_user_id: userId, to_user_id: id },
+        { from_user_id: id, to_user_id: userId },
+      ],
+    });
+
+    if (!connection) {
+      const newConnection = await Connection.create({ // Store the created connection
+        from_user_id: userId,
+        to_user_id: id,
+        status: 'pending',
+        created_at: new Date(),
+      });
+
+      // === NEW: Send Inngest event after creating the connection ===
+      await inngest.send({
+        name: 'app/connection-request', // This is the event your reminder function listens to
+        data: {
+          connectionId: newConnection._id.toString(), // Pass the ID of the new connection
+          fromUserId: userId,
+          toUserId: id,
+        },
+      });
+      // =============================================================
+
+      return res.json({ success: true, message: 'Connection request sent successfully' });
+    } else if (connection.status === 'accepted') {
+      return res.json({ success: false, message: 'You are already connected with this user' });
+    }
+
+    return res.json({ success: false, message: 'Connection request pending' });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
 };
+
+// ... (rest of your controller functions)
 
 // =================== Get User Connections ===================
 export const getUserConnections = async (req, res) => {
